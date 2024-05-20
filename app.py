@@ -11,13 +11,9 @@ from flask import (
     session,
     g,
 )
-from database import cursor, connection
-
-# COMMAND TO USE THE CREATED DATABASE
-cursor.execute("USE freedb_MacroTrack")
+from database import get_db_connection
 
 app = Flask(__name__)
-
 app.secret_key = os.urandom(33)
 
 
@@ -40,6 +36,8 @@ def verify_password(stored_hash, entered_password):
 
 # Store a token in the database
 def store_token(user_id, token):
+    connection = get_db_connection()
+    cursor = connection.cursor()
     cursor.execute(
         "INSERT INTO UserTokens (UserID, Token) VALUES (%s, %s)", (user_id, token)
     )
@@ -57,6 +55,8 @@ def set_remember_me_cookie(response, token):
 
 # Get user by token
 def get_user_by_token(token):
+    connection = get_db_connection()
+    cursor = connection.cursor()
     cursor.execute("SELECT UserID FROM UserTokens WHERE Token = %s", (token,))
     result = cursor.fetchone()
     cursor.close()
@@ -69,6 +69,8 @@ def get_user_by_token(token):
 # Add a new user
 def add_user(email, username, password):
     hashed_password = hash_password(password)
+    connection = get_db_connection()
+    cursor = connection.cursor()
     cursor.execute(
         "INSERT INTO Users (Email, Username, PasswordHash) VALUES (%s, %s, %s)",
         (email, username, hashed_password),
@@ -80,6 +82,8 @@ def add_user(email, username, password):
 
 # Authenticate user
 def authenticate_user(username, entered_password):
+    connection = get_db_connection()
+    cursor = connection.cursor()
     cursor.execute(
         "SELECT UserID, PasswordHash FROM Users WHERE Username = %s", (username,)
     )
@@ -94,7 +98,22 @@ def authenticate_user(username, entered_password):
     return None
 
 
+# Delete user token
+def delete_token_for_user(user_id):
+    connection = get_db_connection()
+    cursor = connection.cursor()
+    cursor.execute("DELETE FROM UserTokens WHERE UserID = %s", (user_id,))
+    connection.commit()
+    cursor.close()
+    connection.close()
+
+
 # Routes
+@app.route("/", methods=["GET"])
+def index():
+    return redirect(url_for("signin"))
+
+
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
     if request.method == "POST":
@@ -102,13 +121,21 @@ def signup():
         email = request.form["email"]
         username = request.form["username"]
         password = request.form["password"]
+        confirm_password = request.form["re_pass"]
+
+        if password != confirm_password:
+            return "Passwords do not match", 400
+
+        if not request.form.get("agree-term"):
+            return "You must agree to the terms of service", 400
+
         add_user(email, username, password)
-        return redirect(url_for("login"))
+        return redirect(url_for("signin"))
     return render_template("signup.html")
 
 
-@app.route("/login", methods=["GET", "POST"])
-def login():
+@app.route("/signin", methods=["GET", "POST"])
+def signin():
     if request.method == "POST":
         session.pop("user", None)
         username = request.form["username"]
@@ -125,7 +152,7 @@ def login():
                 set_remember_me_cookie(response, token)
             return response
         return "Invalid credentials", 401
-    return render_template("login.html")
+    return render_template("signin.html")
 
 
 @app.route("/dashboard")
@@ -135,16 +162,20 @@ def dashboard():
         user_id = get_user_by_token(token)
         if user_id:
             session["user"] = user_id
-            return f"Welcome back, user {user_id}"
-    return redirect(url_for("login"))
+            return render_template("dashboard.html", user=user_id)
+    return redirect(url_for("signin"))
 
 
 @app.route("/logout")
 def logout():
-    session.pop("user", None)
-    response = make_response(render_template("logout.html"))
-    response.delete_cookie("remember_me_token")
-    return response
+    if "user" in session:
+        user_id = session["user"]
+        delete_token_for_user(user_id)  # Delete token for the current user
+        session.pop("user", None)
+        response = make_response(render_template("logout.html"))
+        response.delete_cookie("remember_me_token")
+        return response
+    return redirect(url_for("signin"))
 
 
 @app.before_request
