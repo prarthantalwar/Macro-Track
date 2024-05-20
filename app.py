@@ -111,7 +111,7 @@ def delete_token_for_user(user_id):
 # Routes
 @app.route("/", methods=["GET"])
 def index():
-    return redirect(url_for("signin"))
+    return redirect(url_for("dashboard"))
 
 
 @app.route("/signup", methods=["GET", "POST"])
