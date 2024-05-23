@@ -184,13 +184,78 @@ def extract_existing_foods(user_id):
 
         cursor.execute(query, (user_id,))
         foods = cursor.fetchall()
-        print(foods)
         return foods
     except Error as error:
         print("Error retrieving user foods:", error)
     finally:
         cursor.close()
         connection.close()
+
+
+def get_food_data(food_id, user_id):
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor()
+
+        query = "SELECT f.Name, f.Proteins, f.Carbs, f.Fats, lf.Quantity FROM Food f JOIN LogFood lf ON f.FoodID = lf.FoodID JOIN Logs l ON lf.LogID = l.LogID WHERE l.UserID = %s AND f.FoodID = %s"
+
+        cursor.execute(
+            query,
+            (
+                user_id,
+                food_id,
+            ),
+        )
+
+        foods = cursor.fetchone()
+        food_data = {
+            "food_id": food_id,
+            "food_name": foods[0],
+            "quantity": foods[4],
+            "proteins": foods[1],
+            "carbohydrates": foods[2],
+            "fats": foods[3],
+        }
+
+        connection.commit()
+        cursor.close()
+        connection.close()
+
+        return food_data
+
+    except Error as e:
+        print(f"Error finding food item: {e}")
+        return "An error occurred while finding the food item", 500
+
+
+def update_food_data(
+    food_name, proteins, carbohydrates, fats, quantity, food_id, user_id
+):
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor()
+
+        # Update food item in Food table
+        cursor.execute(
+            "UPDATE Food SET Name = %s, Proteins = %s, Carbs = %s, Fats = %s WHERE UserID = %s AND FoodID = %s",
+            (food_name, proteins, carbohydrates, fats, user_id, food_id),
+        )
+
+        # Update quantity in LogFood table
+        cursor.execute(
+            "UPDATE LogFood SET Quantity = %s WHERE FoodID = %s",
+            (quantity, food_id),
+        )
+
+        connection.commit()
+        cursor.close()
+        connection.close()
+
+        return redirect(url_for("add"))
+
+    except Error as e:
+        print(f"Error updating food item: {e}")
+        return "An error occurred while updating the food item", 500
 
 
 # Routes
@@ -260,13 +325,31 @@ def add():
             proteins = request.form["protein"]
             carbohydrates = request.form["carbohydrates"]
             fats = request.form["fat"]
-            add_food_item_and_log(
-                g.user, food_name, proteins, carbohydrates, fats, quantity=quantity
-            )
-            foods = extract_existing_foods(g.user)
-            return render_template("add.html", foods=foods, user=g.user)
+            food_id = request.form.get("food-id")
+
+            if food_id:
+                update_food_data(
+                    food_name, proteins, carbohydrates, fats, quantity, food_id, g.user
+                )
+            else:
+                add_food_item_and_log(
+                    g.user, food_name, proteins, carbohydrates, fats, quantity=quantity
+                )
+
         foods = extract_existing_foods(g.user)
-        return render_template("add.html", foods=foods, user=g.user)
+        return render_template("add.html", foods=foods, user=g.user, food_data=None)
+    return redirect(url_for("signin"))
+
+
+@app.route("/edit_food/<int:food_id>", methods=["GET", "POST"])
+def edit_food(food_id):
+    if g.user:
+        if request.method == "POST":
+            food_data = get_food_data(food_id, g.user)
+            foods = extract_existing_foods(g.user)
+            return render_template(
+                "add.html", foods=foods, user=g.user, food_data=food_data
+            )
     return redirect(url_for("signin"))
 
 
