@@ -111,65 +111,24 @@ def delete_token_for_user(user_id):
     connection.close()
 
 
-def add_food_item_and_log(user_id, name, proteins, carbs, fats, date=None, quantity=1):
+def add_food_item(user_id, name, proteins, carbs, fats):
     try:
         connection = get_db_connection()
         cursor = connection.cursor()
 
-        # Set date as current date if not provided explicitly
-        if date is None:
-            date = datetime.now().date()
-
-        # Check if the food item already exists for the user
-        check_food_query = """
-        SELECT FoodID FROM Food WHERE UserID = %s AND Name = %s AND Proteins = %s AND Carbs = %s AND Fats = %s
+        # Insert into Food table
+        insert_food_query = """
+        INSERT INTO Food (UserID, Name, Proteins, Carbs, Fats) VALUES (%s, %s, %s, %s, %s)
         """
-        check_food_data = (user_id, name, proteins, carbs, fats)
-        cursor.execute(check_food_query, check_food_data)
-        food_id = cursor.fetchone()
+        food_data = (user_id, name, proteins, carbs, fats)
+        cursor.execute(insert_food_query, food_data)
 
-        if not food_id:
-            # Food item doesn't exist, insert into Food table
-            insert_food_query = """
-            INSERT INTO Food (UserID, Name, Proteins, Carbs, Fats) VALUES (%s, %s, %s, %s, %s)
-            """
-            food_data = (user_id, name, proteins, carbs, fats)
-            cursor.execute(insert_food_query, food_data)
-            food_id = cursor.lastrowid
-        else:
-            food_id = food_id[0]
-
-        # Ensure log entry exists for the user on the given date
-        check_log_query = """
-        SELECT LogID FROM Logs WHERE UserID = %s AND Date = %s
-        """
-        check_log_data = (user_id, date)
-        cursor.execute(check_log_query, check_log_data)
-        log_id = cursor.fetchone()
-
-        if not log_id:
-            # Log entry doesn't exist, insert into Logs table
-            insert_log_query = """
-            INSERT INTO Logs (UserID, Date) VALUES (%s, %s)
-            """
-            log_data = (user_id, date)
-            cursor.execute(insert_log_query, log_data)
-            log_id = cursor.lastrowid
-        else:
-            log_id = log_id[0]
-
-        # Insert into LogFood table
-        insert_log_food_query = """
-        INSERT INTO LogFood (LogID, FoodID, Quantity) VALUES (%s, %s, %s)
-        """
-        log_food_data = (log_id, food_id, quantity)
-        cursor.execute(insert_log_food_query, log_food_data)
         connection.commit()
 
-        print("Food item added to log successfully!")
+        print("Food item added successfully!")
 
     except Error as e:
-        print(f"Error adding food item and log: {e}")
+        print(f"Error adding food item: {e}")
 
     finally:
         cursor.close()
@@ -180,7 +139,7 @@ def extract_existing_foods(user_id):
     try:
         connection = get_db_connection()
         cursor = connection.cursor(dictionary=True)
-        query = "SELECT f.FoodID, f.Name, f.Proteins, f.Carbs, f.Fats, f.Calories, lf.Quantity FROM Food f JOIN LogFood lf ON f.FoodID = lf.FoodID JOIN Logs l ON lf.LogID = l.LogID WHERE l.UserID = %s"
+        query = "SELECT FoodID, Name, Proteins, Carbs, Fats, Calories FROM Food WHERE UserID = %s"
 
         cursor.execute(query, (user_id,))
         foods = cursor.fetchall()
@@ -197,7 +156,7 @@ def get_food_data(food_id, user_id):
         connection = get_db_connection()
         cursor = connection.cursor()
 
-        query = "SELECT f.Name, f.Proteins, f.Carbs, f.Fats, lf.Quantity FROM Food f JOIN LogFood lf ON f.FoodID = lf.FoodID JOIN Logs l ON lf.LogID = l.LogID WHERE l.UserID = %s AND f.FoodID = %s"
+        query = "SELECT Name, Proteins, Carbs, Fats FROM Food WHERE UserID = %s AND FoodID = %s"
 
         cursor.execute(
             query,
@@ -211,7 +170,6 @@ def get_food_data(food_id, user_id):
         food_data = {
             "food_id": food_id,
             "food_name": foods[0],
-            "quantity": foods[4],
             "proteins": foods[1],
             "carbohydrates": foods[2],
             "fats": foods[3],
@@ -228,9 +186,7 @@ def get_food_data(food_id, user_id):
         return "An error occurred while finding the food item", 500
 
 
-def update_food_data(
-    food_name, proteins, carbohydrates, fats, quantity, food_id, user_id
-):
+def update_food_data(food_name, proteins, carbohydrates, fats, food_id, user_id):
     try:
         connection = get_db_connection()
         cursor = connection.cursor()
@@ -241,11 +197,11 @@ def update_food_data(
             (food_name, proteins, carbohydrates, fats, user_id, food_id),
         )
 
-        # Update quantity in LogFood table
-        cursor.execute(
-            "UPDATE LogFood SET Quantity = %s WHERE FoodID = %s",
-            (quantity, food_id),
-        )
+        # # Update quantity in LogFood table
+        # cursor.execute(
+        #     "UPDATE LogFood SET Quantity = %s WHERE FoodID = %s",
+        #     (quantity, food_id),
+        # )
 
         connection.commit()
         cursor.close()
@@ -321,7 +277,6 @@ def add():
     if g.user:
         if request.method == "POST":
             food_name = request.form["food-name"]
-            quantity = request.form["quantity"]
             proteins = request.form["protein"]
             carbohydrates = request.form["carbohydrates"]
             fats = request.form["fat"]
@@ -329,12 +284,10 @@ def add():
 
             if food_id:
                 update_food_data(
-                    food_name, proteins, carbohydrates, fats, quantity, food_id, g.user
+                    food_name, proteins, carbohydrates, fats, food_id, g.user
                 )
             else:
-                add_food_item_and_log(
-                    g.user, food_name, proteins, carbohydrates, fats, quantity=quantity
-                )
+                add_food_item(g.user, food_name, proteins, carbohydrates, fats)
 
         foods = extract_existing_foods(g.user)
         return render_template("add.html", foods=foods, user=g.user, food_data=None)
@@ -360,11 +313,11 @@ def delete_food(food_id):
             connection = get_db_connection()
             cursor = connection.cursor()
 
-            # Delete from LogFood table
-            cursor.execute(
-                "DELETE lf FROM LogFood lf JOIN Food f ON lf.FoodID = f.FoodID WHERE f.UserID = %s AND f.FoodID = %s",
-                (g.user, food_id),
-            )
+            # # Delete from LogFood table
+            # cursor.execute(
+            #     "DELETE lf FROM LogFood lf JOIN Food f ON lf.FoodID = f.FoodID WHERE f.UserID = %s AND f.FoodID = %s",
+            #     (g.user, food_id),
+            # )
 
             # Delete from Food table
             cursor.execute(

@@ -65,32 +65,32 @@
 											value="{{ food_data['food_name'] if food_data else '' }}" placeholder="Food Name" autofocus>
 									</div>
 								</div>
-								<div class="col-lg-4">
+								<!-- <div class="col-lg-4">
 									<div class="form-group">
 										<label for="quantity">Quantity</label>
 										<input type="number" class="form-control" id="quantity" name="quantity"
 											value="{{ food_data['quantity'] if food_data else '' }}" placeholder="Quantity">
 									</div>
-								</div>
+								</div> -->
 								<div class="col-lg-4">
 									<div class="form-group">
 										<label for="protein">Protein</label>
 										<input type="number" class="form-control" id="protein" name="protein"
-											value="{{ food_data['proteins'] if food_data else '' }}" placeholder="Protein">
+											value="{{ food_data['proteins'] if food_data else '' }}" placeholder="Protein" step="0.01">
 									</div>
 								</div>
 								<div class="col-lg-4">
 									<div class="form-group">
 										<label for="carbohydrates">Carbohydrates</label>
 										<input type="number" class="form-control" id="carbohydrates" name="carbohydrates"
-											value="{{ food_data['carbohydrates'] if food_data else '' }}" placeholder="Carbohydrates">
+											value="{{ food_data['carbohydrates'] if food_data else '' }}" placeholder="Carbohydrates" step="0.01">
 									</div>
 								</div>
 								<div class="col-lg-4">
 									<div class="form-group">
 										<label for="fat">Fat</label>
 										<input type="number" class="form-control" id="fat" name="fat"
-											value="{{ food_data['fats'] if food_data else '' }}" placeholder="Fat">
+											value="{{ food_data['fats'] if food_data else '' }}" placeholder="Fat" step="0.01">
 									</div>
 								</div>
 								<div class="col-lg-4">
@@ -124,7 +124,7 @@
 								<tr>
 									<th style="width: 5%;">#</th>
 									<th>Name</th>
-									<th style="width: 8%;">Quantity</th>
+									<!-- <th style="width: 8%;">Quantity</th> -->
 									<th style="width: 10%;">Protein</th>
 									<th style="width: 16%;">Carbohydrates</th>
 									<th style="width: 10%;">Fat</th>
@@ -137,7 +137,7 @@
 								<tr>
 									<td>{{ loop.index }}</td>
 									<td>{{ food["Name"] }}</td>
-									<td>{{ food["Quantity"] }}</td>
+									<!-- <td>{{ food["Quantity"] }}</td> -->
 									<td>{{ food["Proteins"] }}</td>
 									<td>{{ food["Carbs"] }}</td>
 									<td>{{ food["Fats"] }}</th>
