@@ -197,12 +197,6 @@ def update_food_data(food_name, proteins, carbohydrates, fats, food_id, user_id)
             (food_name, proteins, carbohydrates, fats, user_id, food_id),
         )
 
-        # # Update quantity in LogFood table
-        # cursor.execute(
-        #     "UPDATE LogFood SET Quantity = %s WHERE FoodID = %s",
-        #     (quantity, food_id),
-        # )
-
         connection.commit()
         cursor.close()
         connection.close()
@@ -214,16 +208,67 @@ def update_food_data(food_name, proteins, carbohydrates, fats, food_id, user_id)
         return "An error occurred while updating the food item", 500
 
 
+def get_logs(user_id):
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor()
+        query = """
+            SELECT Logs.LogID, Logs.Date, SUM(LogFood.Quantity * Food.Proteins) AS TotalProteins,
+                SUM(LogFood.Quantity * Food.Carbs) AS TotalCarbs,
+                SUM(LogFood.Quantity * Food.Fats) AS TotalFats,
+                SUM(LogFood.Quantity * Food.Calories) AS TotalCalories
+            FROM Logs
+            LEFT JOIN LogFood ON Logs.LogID = LogFood.LogID
+            LEFT JOIN Food ON LogFood.FoodID = Food.FoodID
+            WHERE Logs.UserID = %s
+            GROUP BY Logs.LogID
+            ORDER BY Logs.Date DESC
+        """
+        cursor.execute(query, (user_id,))
+        logs = cursor.fetchall()
+    except Error as error:
+        print("Error inserting Log:", error)
+    finally:
+        cursor.close()
+        connection.close()
+    return logs
+
+
+def disp_food_list(foods):
+    food_list = {}
+    for food in foods:
+        food_list[food[0]] = f"{food[1]} - ({food[2]} P, {food[3]} C, {food[4]} F)"
+    return food_list
+
+
 # Routes
 @app.route("/", methods=["GET"])
 def index():
-    return redirect(url_for("dashboard"))
+    if g.user:
+        logs = get_logs(g.user)
+
+        log_dates = []
+
+        for log in logs:
+            log_dates.append(
+                {
+                    "log_ID": log[0],
+                    "log_date": log[1],
+                    "proteins": log[2] or 0,  # Use 0 if NULL
+                    "carbs": log[3] or 0,
+                    "fats": log[4] or 0,
+                    "calories": log[5] or 0,
+                }
+            )
+        print(log_dates)
+        return render_template("index.html", log_dates=log_dates)
+    return redirect(url_for("signin"))
 
 
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
     if g.user:
-        return redirect(url_for("dashboard"))
+        return redirect(url_for("index"))
     if request.method == "POST":
         session.pop("user", None)
         email = request.form["email"]
@@ -245,7 +290,7 @@ def signup():
 @app.route("/signin", methods=["GET", "POST"])
 def signin():
     if g.user:
-        return redirect(url_for("dashboard"))
+        return redirect(url_for("index"))
     if request.method == "POST":
         session.pop("user", None)
         username = request.form["username"]
@@ -255,7 +300,7 @@ def signin():
         user_id = authenticate_user(username, password)
         if user_id:
             session["user"] = user_id
-            response = make_response(redirect(url_for("dashboard")))
+            response = make_response(redirect(url_for("index")))
             if remember_me:
                 token = generate_token()
                 store_token(user_id, token)
@@ -263,13 +308,6 @@ def signin():
             return response
         return "Invalid credentials", 401
     return render_template("signin.html")
-
-
-@app.route("/dashboard")
-def dashboard():
-    if g.user:
-        return render_template("dashboard.html", user=g.user)
-    return redirect(url_for("signin"))
 
 
 @app.route("/add", methods=["GET", "POST"])
@@ -313,12 +351,6 @@ def delete_food(food_id):
             connection = get_db_connection()
             cursor = connection.cursor()
 
-            # # Delete from LogFood table
-            # cursor.execute(
-            #     "DELETE lf FROM LogFood lf JOIN Food f ON lf.FoodID = f.FoodID WHERE f.UserID = %s AND f.FoodID = %s",
-            #     (g.user, food_id),
-            # )
-
             # Delete from Food table
             cursor.execute(
                 "DELETE FROM Food WHERE UserID = %s AND FoodID = %s",
@@ -334,6 +366,145 @@ def delete_food(food_id):
             print(f"Error deleting food item: {e}")
             return "An error occurred while deleting the food item", 500
 
+    return redirect(url_for("signin"))
+
+
+@app.route("/view/<int:log_ID>")
+def view(log_ID):
+    if g.user:
+        try:
+            connection = get_db_connection()
+            cursor = connection.cursor()
+            # Query to get the log details including the date
+            query = "SELECT * FROM Logs WHERE LogID = %s"
+            cursor.execute(query, (log_ID,))
+            log = cursor.fetchone()
+            print("\n\nlog:", log)
+
+            foods = (
+                query
+            ) = """
+                SELECT FoodID, Name, Proteins, Carbs, Fats, Calories FROM Food WHERE UserID=%s
+            """
+            cursor.execute(query, (g.user,))
+            foods = cursor.fetchall()
+            foods = disp_food_list(foods)
+
+            print("\n\nfoods:", foods, type(foods))
+
+            # Query to get all food items associated with the log
+            query = """
+                SELECT
+                Food.FoodID AS FoodID,
+                Food.Name AS FoodName,
+                Food.Proteins AS Proteins,
+                Food.Carbs AS Carbs,
+                Food.Fats AS Fats,
+                Food.Calories AS Calories,
+                LogFood.Quantity AS Quantity
+            FROM 
+                Logs
+            JOIN 
+                LogFood ON Logs.LogID = LogFood.LogID
+            JOIN 
+                Food ON LogFood.FoodID = Food.FoodID
+            WHERE 
+                Logs.UserID = %s
+                AND Logs.Date = %s
+            """
+            cursor.execute(query, (g.user, log[2].strftime("%Y-%m-%d")))
+            log_foods = cursor.fetchall()
+
+            print("\n\nlog_foods:", log_foods)
+
+            # Calculate totals for proteins, carbs, fats, and calories
+            totals = {"protein": 0, "carbs": 0, "fat": 0, "calories": 0}
+
+            for food in log_foods:
+                totals["protein"] += food[2] * food[6]
+                totals["carbs"] += food[3] * food[6]
+                totals["fat"] += food[4] * food[6]
+                totals["calories"] += food[5] * food[6]
+
+            print("\n\ntotals:", totals)
+            return render_template(
+                "view.html",
+                foods=foods,
+                user=g.user,
+                log=log,
+                totals=totals,
+                log_foods=log_foods,
+            )
+        except Error as error:
+            print("Error inserting Log:", error)
+        finally:
+            cursor.close()
+            connection.close()
+    return redirect(url_for("signin"))
+
+
+@app.route("/create_log", methods=["POST"])
+def create_log():
+    if g.user:
+        date = request.form.get("date")
+        date = datetime.strptime(date, "%Y-%m-%d")
+        try:
+            connection = get_db_connection()
+            cursor = connection.cursor()
+            query = "INSERT INTO Logs (UserID, Date) VALUES (%s, %s)"
+            cursor.execute(query, (g.user, date))
+            connection.commit()
+
+            query2 = "SELECT LogID FROM Logs WHERE UserID = %s AND Date = %s"
+            cursor.execute(query2, (g.user, date))
+            result = cursor.fetchone()
+            print(result)
+            log_ID = result[0]
+
+        except Error as error:
+            print("Error inserting Log:", error)
+        finally:
+            cursor.close()
+            connection.close()
+        return redirect(url_for("view", log_ID=log_ID))
+    return redirect(url_for("signin"))
+
+
+@app.route("/add_food_to_log/<int:log_ID>", methods=["POST"])
+def add_food_to_log(log_ID):
+    if g.user:
+        selected_food = request.form.get("food-select")
+        quantity = request.form.get("quantity")
+        try:
+            connection = get_db_connection()
+            cursor = connection.cursor(dictionary=True)
+            query = "INSERT INTO LogFood (LogID, FoodID, Quantity) VALUES (%s, %s, %s)"
+            cursor.execute(query, (log_ID, int(selected_food), quantity))
+            connection.commit()
+        except Error as error:
+            print("Error adding food to log:", error)
+        finally:
+            cursor.close()
+            connection.close()
+        return redirect(url_for("view", log_ID=log_ID))
+    return redirect(url_for("signin"))
+
+
+@app.route("/remove_food_from_log/<int:log_ID>/<int:food_ID>", methods=["POST", "GET"])
+def remove_food_from_log(log_ID, food_ID):
+    if g.user:
+        try:
+            connection = get_db_connection()
+            cursor = connection.cursor()
+            query = "DELETE FROM LogFood WHERE LogID = %s AND FoodID = %s"
+            cursor.execute(query, (log_ID, food_ID))
+            connection.commit()
+        except Error as error:
+            print("Error removing food from log:", error)
+        finally:
+            cursor.close()
+            connection.close()
+        return redirect(url_for("view", log_ID=log_ID))
     return redirect(url_for("signin"))
 
 

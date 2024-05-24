@@ -109,11 +109,11 @@
           <div class="panel panel-warning">
             <div class="panel-body text-bold">
               <i class="glyphicon glyphicon-calendar"></i> {{
-              log_date['log_date'].date.strftime('%B %d, %Y') }}
+              log_date['log_date'].strftime('%B %d, %Y') }}
 
               <a
                 class="btn btn-primary btn-xs pull-right"
-                href="{{ url_for('view', log_id=log_date['log_date'].id) }}"
+                href="{{ url_for('view', log_ID=log_date['log_ID']) }}"
               >
                 View <i class="glyphicon glyphicon-arrow-right"></i>
               </a>

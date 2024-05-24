@@ -2,17 +2,34 @@ MacroTrack App for daily macro tracking
 
 ```
 Macro Track
-├─ .gitignore
 ├─ app.py
 ├─ database.py
 ├─ db.sql
+├─ old_app.py
 ├─ README.md
 ├─ requirements.txt
 ├─ static
 │  ├─ css
+│  │  ├─ bootstrap-theme.css
+│  │  ├─ bootstrap-theme.css.map
+│  │  ├─ bootstrap-theme.min.css
+│  │  ├─ bootstrap-theme.min.css.map
+│  │  ├─ bootstrap.css
+│  │  ├─ bootstrap.css.map
+│  │  ├─ bootstrap.min.css
+│  │  ├─ bootstrap.min.css.map
+│  │  ├─ cerulean.min.css
+│  │  ├─ flatly.min.css
 │  │  ├─ style.css
-│  │  └─ style.css.map
+│  │  ├─ style.css.map
+│  │  ├─ styles.css
+│  │  └─ united.min.css
 │  ├─ fonts
+│  │  ├─ glyphicons-halflings-regular.eot
+│  │  ├─ glyphicons-halflings-regular.svg
+│  │  ├─ glyphicons-halflings-regular.ttf
+│  │  ├─ glyphicons-halflings-regular.woff
+│  │  ├─ glyphicons-halflings-regular.woff2
 │  │  ├─ material-icon
 │  │  │  ├─ css
 │  │  │  │  ├─ material-design-iconic-font.css
@@ -107,8 +124,14 @@ Macro Track
 │  ├─ images
 │  │  ├─ signin-image.jpg
 │  │  └─ signup-image.jpg
+│  ├─ img
+│  │  └─ bg.jpg
 │  ├─ js
-│  │  └─ main.js
+│  │  ├─ bootstrap.js
+│  │  ├─ bootstrap.min.js
+│  │  ├─ jquery.min.js
+│  │  ├─ main.js
+│  │  └─ npm.js
 │  ├─ scss
 │  │  ├─ common
 │  │  │  ├─ extend.scss
@@ -125,7 +148,20 @@ Macro Track
 │        ├─ jquery-ui.min.js
 │        └─ jquery.min.js
 └─ templates
+   ├─ add.html
+   ├─ dashboard.html
+   ├─ index.html
+   ├─ logout.html
    ├─ signin.html
-   └─ signup.html
+   ├─ signup.html
+   ├─ test.html
+   └─ view.html
 
 ```
+
+Avoid duplicates everywhere, foods, dates etc.
+Display appropriate message with flashes not redirects.
+Add logout button.
+Improve UI
+Try to use same fonts
+Try to match the aesthetic.
