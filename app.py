@@ -506,7 +506,7 @@ def logout():
         user_id = session["user"]
         delete_token_for_user(user_id)  # Delete token for the current user
         session.pop("user", None)
-        response = make_response(render_template("signin.html"))
+        response = make_response(redirect(url_for("signin")))
         response.delete_cookie("remember_me_token")
         return response
     return redirect(url_for("signin"))
