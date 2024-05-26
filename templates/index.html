@@ -32,7 +32,7 @@
       }
       #homeJumbo {
         background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)),
-          url("path/to/your/image.jpg") no-repeat center center;
+          url("static/img/bg.jpg") no-repeat center center;
         background-size: cover;
         color: #fff;
         padding: 100px 0;
@@ -91,6 +91,12 @@
       .footer strong {
         color: #f39c12;
       }
+      .logout-button {
+        position: absolute;
+        top: 30px;
+        right: 10px;
+        z-index: 1000;
+      }
     </style>
 
     <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
@@ -101,6 +107,10 @@
     <![endif]-->
   </head>
   <body>
+    <div class="logout-button">
+      <a href="{{ url_for('logout') }}" class="btn btn-danger">Logout</a>
+    </div>
+
     <div class="container-fluid" id="wrapper">
       <div class="row" id="homeJumbo">
         <div class="overlay"></div>

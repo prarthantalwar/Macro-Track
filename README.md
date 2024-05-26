@@ -161,7 +161,5 @@ Macro Track
 
 Avoid duplicates everywhere, foods, dates etc.
 Display appropriate message with flashes not redirects.
-Add logout button.
 Improve UI
-Try to use same fonts
-Try to match the aesthetic.
+Work on remember me function, it didn't log me out when I closed a tab without clicking remember me

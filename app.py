@@ -260,7 +260,6 @@ def index():
                     "calories": log[5] or 0,
                 }
             )
-        print(log_dates)
         return render_template("index.html", log_dates=log_dates)
     return redirect(url_for("signin"))
 
@@ -328,7 +327,6 @@ def add():
                 add_food_item(g.user, food_name, proteins, carbohydrates, fats)
 
         foods = extract_existing_foods(g.user)
-        print("\n\nThis is it", foods, "\n\n")
         return render_template("add.html", foods=foods, user=g.user, food_data=None)
     return redirect(url_for("signin"))
 
@@ -380,7 +378,6 @@ def view(log_ID):
             query = "SELECT * FROM Logs WHERE LogID = %s"
             cursor.execute(query, (log_ID,))
             log = cursor.fetchone()
-            print("\n\nlog:", log)
 
             foods = (
                 query
@@ -390,8 +387,6 @@ def view(log_ID):
             cursor.execute(query, (g.user,))
             foods = cursor.fetchall()
             foods = disp_food_list(foods)
-
-            print("\n\nfoods:", foods, type(foods))
 
             # Query to get all food items associated with the log
             query = """
@@ -416,8 +411,6 @@ def view(log_ID):
             cursor.execute(query, (g.user, log[2].strftime("%Y-%m-%d")))
             log_foods = cursor.fetchall()
 
-            print("\n\nlog_foods:", log_foods)
-
             # Calculate totals for proteins, carbs, fats, and calories
             totals = {"protein": 0, "carbs": 0, "fat": 0, "calories": 0}
 
@@ -427,7 +420,6 @@ def view(log_ID):
                 totals["fat"] += food[4] * food[6]
                 totals["calories"] += food[5] * food[6]
 
-            print("\n\ntotals:", totals)
             return render_template(
                 "view.html",
                 foods=foods,
@@ -459,7 +451,6 @@ def create_log():
             query2 = "SELECT LogID FROM Logs WHERE UserID = %s AND Date = %s"
             cursor.execute(query2, (g.user, date))
             result = cursor.fetchone()
-            print(result)
             log_ID = result[0]
 
         except Error as error:
@@ -515,7 +506,7 @@ def logout():
         user_id = session["user"]
         delete_token_for_user(user_id)  # Delete token for the current user
         session.pop("user", None)
-        response = make_response(render_template("logout.html"))
+        response = make_response(render_template("signin.html"))
         response.delete_cookie("remember_me_token")
         return response
     return redirect(url_for("signin"))
