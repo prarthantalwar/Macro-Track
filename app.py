@@ -138,7 +138,7 @@ def add_food_item(user_id, name, proteins, carbs, fats):
 def extract_existing_foods(user_id):
     try:
         connection = get_db_connection()
-        cursor = connection.cursor(dictionary=True)
+        cursor = connection.cursor()
         query = "SELECT FoodID, Name, Proteins, Carbs, Fats, Calories FROM Food WHERE UserID = %s"
 
         cursor.execute(query, (user_id,))
@@ -328,6 +328,7 @@ def add():
                 add_food_item(g.user, food_name, proteins, carbohydrates, fats)
 
         foods = extract_existing_foods(g.user)
+        print("\n\nThis is it", foods, "\n\n")
         return render_template("add.html", foods=foods, user=g.user, food_data=None)
     return redirect(url_for("signin"))
 
