@@ -18,6 +18,7 @@ from datetime import datetime
 
 app = Flask(__name__)
 app.secret_key = os.urandom(33)
+app.config["SESSION_PERMANENT"] = False
 
 
 # Generate a secure token
@@ -124,15 +125,13 @@ def add_food_item(user_id, name, proteins, carbs, fats):
         cursor.execute(insert_food_query, food_data)
 
         connection.commit()
+        cursor.close()
+        connection.close()
 
         print("Food item added successfully!")
 
     except Error as e:
         print(f"Error adding food item: {e}")
-
-    finally:
-        cursor.close()
-        connection.close()
 
 
 def extract_existing_foods(user_id):
@@ -143,12 +142,11 @@ def extract_existing_foods(user_id):
 
         cursor.execute(query, (user_id,))
         foods = cursor.fetchall()
+        cursor.close()
+        connection.close()
         return foods
     except Error as error:
         print("Error retrieving user foods:", error)
-    finally:
-        cursor.close()
-        connection.close()
 
 
 def get_food_data(food_id, user_id):
@@ -226,11 +224,11 @@ def get_logs(user_id):
         """
         cursor.execute(query, (user_id,))
         logs = cursor.fetchall()
-    except Error as error:
-        print("Error inserting Log:", error)
-    finally:
         cursor.close()
         connection.close()
+    except Error as error:
+        print("Error inserting Log:", error)
+
     return logs
 
 
@@ -420,6 +418,9 @@ def view(log_ID):
                 totals["fat"] += food[4] * food[6]
                 totals["calories"] += food[5] * food[6]
 
+            cursor.close()
+            connection.close()
+
             return render_template(
                 "view.html",
                 foods=foods,
@@ -430,9 +431,7 @@ def view(log_ID):
             )
         except Error as error:
             print("Error inserting Log:", error)
-        finally:
-            cursor.close()
-            connection.close()
+
     return redirect(url_for("signin"))
 
 
@@ -452,12 +451,12 @@ def create_log():
             cursor.execute(query2, (g.user, date))
             result = cursor.fetchone()
             log_ID = result[0]
+            cursor.close()
+            connection.close()
 
         except Error as error:
             print("Error inserting Log:", error)
-        finally:
-            cursor.close()
-            connection.close()
+
         return redirect(url_for("view", log_ID=log_ID))
     return redirect(url_for("signin"))
 
@@ -473,11 +472,11 @@ def add_food_to_log(log_ID):
             query = "INSERT INTO LogFood (LogID, FoodID, Quantity) VALUES (%s, %s, %s)"
             cursor.execute(query, (log_ID, int(selected_food), quantity))
             connection.commit()
-        except Error as error:
-            print("Error adding food to log:", error)
-        finally:
             cursor.close()
             connection.close()
+        except Error as error:
+            print("Error adding food to log:", error)
+
         return redirect(url_for("view", log_ID=log_ID))
     return redirect(url_for("signin"))
 
@@ -491,9 +490,11 @@ def remove_food_from_log(log_ID, food_ID):
             query = "DELETE FROM LogFood WHERE LogID = %s AND FoodID = %s"
             cursor.execute(query, (log_ID, food_ID))
             connection.commit()
+            cursor.close()
+            connection.close()
         except Error as error:
             print("Error removing food from log:", error)
-        finally:
+
             cursor.close()
             connection.close()
         return redirect(url_for("view", log_ID=log_ID))

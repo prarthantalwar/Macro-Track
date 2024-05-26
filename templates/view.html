@@ -156,7 +156,7 @@
 							<div class="form-group">
 								<label>Add Food</label>
 								<div class="input-group">
-									<select class="form-control" name="food-select">
+									<select class="form-control" name="food-select" required>
 										<option value="" selected disabled>Select Food</option>
 										{% for food_id, food_name in foods.items() %}
 										<option value="{{ food_id }}">{{ food_name }}</option>
@@ -164,7 +164,7 @@
 									</select>
 									<label for="quantity">Quantity</label>
 									<input type="number" class="form-control" id="quantity" name="quantity"
-										placeholder="Quantity">
+										placeholder="Quantity" required>
 									<span class="input-group-btn">
 										<button type="submit" class="btn btn-primary" id="add-btn">
 											<i class="glyphicon glyphicon-plus-sign"></i> Add Food
