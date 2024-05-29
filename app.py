@@ -52,9 +52,12 @@ def store_token(user_id, token):
 
 # Set a remember me cookie
 def set_remember_me_cookie(response, token):
-    response.set_cookie(
-        "remember_me_token", token, max_age=30 * 24 * 60 * 60, httponly=True
-    )  # Cookie valid for 30 days
+    max_age = 30 * 24 * 60 * 60  # Cookie valid for 30 days
+    if session.get("remember_me"):
+        response.set_cookie("remember_me_token", token, max_age=max_age, httponly=True)
+    else:
+        # Set a session cookie that expires when the browser is closed
+        response.set_cookie("remember_me_token", token, httponly=True)
 
 
 # Get user by token
@@ -299,9 +302,12 @@ def signin():
             session["user"] = user_id
             response = make_response(redirect(url_for("index")))
             if remember_me:
-                token = generate_token()
-                store_token(user_id, token)
-                set_remember_me_cookie(response, token)
+                session["remember_me"] = True
+            else:
+                session.pop("remember_me", None)
+            token = generate_token()
+            store_token(user_id, token)
+            set_remember_me_cookie(response, token)
             return response
         return "Invalid credentials", 401
     return render_template("signin.html")
@@ -507,6 +513,7 @@ def logout():
         user_id = session["user"]
         delete_token_for_user(user_id)  # Delete token for the current user
         session.pop("user", None)
+        session.pop("remember_me", None)  # Clear the remember me session variable
         response = make_response(redirect(url_for("signin")))
         response.delete_cookie("remember_me_token")
         return response
