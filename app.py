@@ -303,11 +303,11 @@ def signin():
             response = make_response(redirect(url_for("index")))
             if remember_me:
                 session["remember_me"] = True
+                token = generate_token()
+                store_token(user_id, token)
+                set_remember_me_cookie(response, token)
             else:
                 session.pop("remember_me", None)
-            token = generate_token()
-            store_token(user_id, token)
-            set_remember_me_cookie(response, token)
             return response
         return "Invalid credentials", 401
     return render_template("signin.html")
@@ -525,13 +525,14 @@ def before_request():
     g.user = None
     if "user" in session:
         g.user = session["user"]
-    else:
+    elif "remember_me_token" in request.cookies:
         token = request.cookies.get("remember_me_token")
-        if token:
-            user_id = get_user_by_token(token)
-            if user_id:
-                session["user"] = user_id
-                g.user = user_id
+        user_id = get_user_by_token(token)
+        if user_id:
+            session["user"] = user_id
+            g.user = user_id
+    else:
+        session.pop("user", None)
 
 
 @app.route("/<string:page_name>")
