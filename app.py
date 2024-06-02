@@ -10,6 +10,7 @@ from flask import (
     render_template,
     session,
     g,
+    flash,
 )
 from database import get_db_connection
 from mysql.connector import Error
@@ -235,6 +236,17 @@ def get_logs(user_id):
     return logs
 
 
+def get_log_by_date_and_user(date, user_id):
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    query = "SELECT * FROM Logs WHERE Date = %s AND UserID = %s"
+    cursor.execute(query, (date, user_id))
+    log = cursor.fetchone()
+    cursor.close()
+    conn.close()
+    return log
+
+
 def disp_food_list(foods):
     food_list = {}
     for food in foods:
@@ -446,12 +458,22 @@ def create_log():
     if g.user:
         date = request.form.get("date")
         date = datetime.strptime(date, "%Y-%m-%d")
+
+        today = datetime.today().date()
+
+        if date.date() > today:
+            flash("You can't create a log for a future date.", "danger")
+            return redirect(url_for("index"))
+
         try:
             connection = get_db_connection()
             cursor = connection.cursor()
-            query = "INSERT INTO Logs (UserID, Date) VALUES (%s, %s)"
-            cursor.execute(query, (g.user, date))
-            connection.commit()
+
+            existing_log = get_log_by_date_and_user(date, g.user)
+            if not existing_log:
+                query = "INSERT INTO Logs (UserID, Date) VALUES (%s, %s)"
+                cursor.execute(query, (g.user, date))
+                connection.commit()
 
             query2 = "SELECT LogID FROM Logs WHERE UserID = %s AND Date = %s"
             cursor.execute(query2, (g.user, date))

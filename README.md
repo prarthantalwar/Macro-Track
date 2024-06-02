@@ -2,10 +2,10 @@ MacroTrack App for daily macro tracking
 
 ```
 Macro Track
+├─ .gitignore
 ├─ app.py
 ├─ database.py
 ├─ db.sql
-├─ old_app.py
 ├─ README.md
 ├─ requirements.txt
 ├─ static
@@ -24,6 +24,14 @@ Macro Track
 │  │  ├─ style.css.map
 │  │  ├─ styles.css
 │  │  └─ united.min.css
+│  ├─ favicon
+│  │  ├─ android-chrome-192x192.png
+│  │  ├─ android-chrome-512x512.png
+│  │  ├─ apple-touch-icon.png
+│  │  ├─ favicon-16x16.png
+│  │  ├─ favicon-32x32.png
+│  │  ├─ favicon.ico
+│  │  └─ site.webmanifest
 │  ├─ fonts
 │  │  ├─ glyphicons-halflings-regular.eot
 │  │  ├─ glyphicons-halflings-regular.svg
@@ -149,12 +157,9 @@ Macro Track
 │        └─ jquery.min.js
 └─ templates
    ├─ add.html
-   ├─ dashboard.html
    ├─ index.html
-   ├─ logout.html
    ├─ signin.html
    ├─ signup.html
-   ├─ test.html
    └─ view.html
 
 ```
