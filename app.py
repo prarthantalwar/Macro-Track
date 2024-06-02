@@ -132,8 +132,6 @@ def add_food_item(user_id, name, proteins, carbs, fats):
         cursor.close()
         connection.close()
 
-        print("Food item added successfully!")
-
     except Error as e:
         print(f"Error adding food item: {e}")
 
@@ -272,7 +270,6 @@ def check_log_food(food_id, log_id):
         cursor = conn.cursor(dictionary=True)
         query = "SELECT * FROM LogFood WHERE LogID = %s AND FoodID = %s"
         cursor.execute(query, (log_id, food_id))
-        print("\n\nInside check_log_food, foodid and logid = ", food_id, log_id)
         log = cursor.fetchone()
         cursor.close()
         conn.close()
@@ -544,7 +541,6 @@ def add_food_to_log(log_ID):
             cursor = connection.cursor(dictionary=True)
 
             food_check_log = check_log_food(int(selected_food), log_ID)
-            print("\n\n\n Food check log:", food_check_log)
             if not food_check_log:
                 query = (
                     "INSERT INTO LogFood (LogID, FoodID, Quantity) VALUES (%s, %s, %s)"
