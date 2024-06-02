@@ -237,13 +237,48 @@ def get_logs(user_id):
 
 
 def get_log_by_date_and_user(date, user_id):
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-    query = "SELECT * FROM Logs WHERE Date = %s AND UserID = %s"
-    cursor.execute(query, (date, user_id))
-    log = cursor.fetchone()
-    cursor.close()
-    conn.close()
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        query = "SELECT * FROM Logs WHERE Date = %s AND UserID = %s"
+        cursor.execute(query, (date, user_id))
+        log = cursor.fetchone()
+        cursor.close()
+        conn.close()
+    except Error as error:
+        print("Error checking date:", error)
+
+    return log
+
+
+def check_food(name, carbohydrates, proteins, fats):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        query = "SELECT * FROM Food WHERE Name = %s AND Proteins = %s AND Carbs = %s AND Fats = %s"
+        cursor.execute(query, (name, proteins, carbohydrates, fats))
+        log = cursor.fetchone()
+        cursor.close()
+        conn.close()
+    except Error as error:
+        print("Error checking food:", error)
+
+    return log
+
+
+def check_log_food(food_id, log_id):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        query = "SELECT * FROM LogFood WHERE LogID = %s AND FoodID = %s"
+        cursor.execute(query, (log_id, food_id))
+        print("\n\nInside check_log_food, foodid and logid = ", food_id, log_id)
+        log = cursor.fetchone()
+        cursor.close()
+        conn.close()
+    except Error as error:
+        print("Error checking log food:", error)
+
     return log
 
 
@@ -340,7 +375,11 @@ def add():
                     food_name, proteins, carbohydrates, fats, food_id, g.user
                 )
             else:
-                add_food_item(g.user, food_name, proteins, carbohydrates, fats)
+                food_log = check_food(food_name, carbohydrates, proteins, fats)
+                if not food_log:
+                    add_food_item(g.user, food_name, proteins, carbohydrates, fats)
+                else:
+                    flash("Food item already present", "Warning")
 
         foods = extract_existing_foods(g.user)
         return render_template("add.html", foods=foods, user=g.user, food_data=None)
@@ -436,6 +475,12 @@ def view(log_ID):
                 totals["fat"] += food[4] * food[6]
                 totals["calories"] += food[5] * food[6]
 
+            # Round each total to 3 decimal places
+            totals["protein"] = round(totals["protein"], 3)
+            totals["carbs"] = round(totals["carbs"], 3)
+            totals["fat"] = round(totals["fat"], 3)
+            totals["calories"] = round(totals["calories"], 3)
+
             cursor.close()
             connection.close()
 
@@ -497,9 +542,21 @@ def add_food_to_log(log_ID):
         try:
             connection = get_db_connection()
             cursor = connection.cursor(dictionary=True)
-            query = "INSERT INTO LogFood (LogID, FoodID, Quantity) VALUES (%s, %s, %s)"
-            cursor.execute(query, (log_ID, int(selected_food), quantity))
-            connection.commit()
+
+            food_check_log = check_log_food(int(selected_food), log_ID)
+            print("\n\n\n Food check log:", food_check_log)
+            if not food_check_log:
+                query = (
+                    "INSERT INTO LogFood (LogID, FoodID, Quantity) VALUES (%s, %s, %s)"
+                )
+                cursor.execute(query, (log_ID, int(selected_food), quantity))
+                connection.commit()
+            else:
+                qty = food_check_log["Quantity"]
+                quantity = qty + float(quantity)
+                query = "UPDATE LogFood SET Quantity=%s WHERE LogID=%s AND FoodID=%s"
+                cursor.execute(query, (quantity, log_ID, int(selected_food)))
+                connection.commit()
             cursor.close()
             connection.close()
         except Error as error:

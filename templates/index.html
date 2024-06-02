@@ -224,16 +224,19 @@
             </div>
             <ul class="list-group">
               <li class="list-group-item text-bold">
-                <span class="badge">{{ log_date['proteins'] }}</span> Protein
+                <span class="badge">{{ log_date['proteins'] | round(3) }}</span>
+                Protein
               </li>
               <li class="list-group-item text-bold">
-                <span class="badge">{{ log_date['carbs'] }}</span> Carbohydrate
+                <span class="badge">{{ log_date['carbs'] | round(3) }}</span>
+                Carbohydrate
               </li>
               <li class="list-group-item text-bold">
-                <span class="badge">{{ log_date['fats'] }}</span> Fat
+                <span class="badge">{{ log_date['fats'] | round(3) }}</span> Fat
               </li>
               <li class="list-group-item text-bold">
-                <span class="badge">{{ log_date['calories'] }}</span> Calories
+                <span class="badge">{{ log_date['calories'] | round(3) }}</span>
+                Calories
               </li>
             </ul>
           </div>
